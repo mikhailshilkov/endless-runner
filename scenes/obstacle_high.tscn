@@ -1,0 +1,41 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/obstacle.gd" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_high"]
+size = Vector3(2.2, 1.2, 0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_bar"]
+size = Vector3(2.2, 0.3, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pole"]
+size = Vector3(0.15, 1.2, 0.15)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_high"]
+albedo_color = Color(0.9, 0.6, 0.1, 1)
+roughness = 0.7
+
+[node name="ObstacleHigh" type="Area3D"]
+collision_layer = 4
+collision_mask = 2
+script = ExtResource("1")
+obstacle_type = "high"
+
+[node name="CollisionShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+shape = SubResource("BoxShape3D_high")
+
+[node name="Bar" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+mesh = SubResource("BoxMesh_bar")
+surface_material_override/0 = SubResource("StandardMaterial3D_high")
+
+[node name="PoleLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0, 1.5, 0)
+mesh = SubResource("BoxMesh_pole")
+surface_material_override/0 = SubResource("StandardMaterial3D_high")
+
+[node name="PoleRight" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0, 1.5, 0)
+mesh = SubResource("BoxMesh_pole")
+surface_material_override/0 = SubResource("StandardMaterial3D_high")
