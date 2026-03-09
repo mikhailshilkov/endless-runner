@@ -1,7 +1,7 @@
 extends Node3D
 
 const CHUNK_LENGTH: float = 40.0
-const BUFFER_AHEAD: float = 160.0  # Keep this much track ahead of scroll position
+const BUFFER_AHEAD: float = 300.0  # Keep this much track ahead of scroll position
 
 var chunk_scene: PackedScene
 var obstacle_low_scene: PackedScene

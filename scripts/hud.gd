@@ -56,17 +56,37 @@ func _on_hearts_changed(count: int) -> void:
 
 
 func _update_hearts(count: int) -> void:
-	# Clear existing hearts
 	for child in heart_container.get_children():
 		child.queue_free()
-	# Add heart symbols
 	for i in range(count):
-		var heart := Label.new()
-		heart.text = "\u2764"
-		heart.add_theme_font_size_override("font_size", 28)
-		heart.add_theme_color_override("font_color", Color(1.0, 0.15, 0.25, 1))
-		heart.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
-		heart_container.add_child(heart)
+		var icon := _create_heart_icon()
+		heart_container.add_child(icon)
+
+
+func _create_heart_icon() -> Control:
+	var container := Control.new()
+	container.custom_minimum_size = Vector2(28, 28)
+	# Left lobe
+	var left := ColorRect.new()
+	left.color = Color(1.0, 0.15, 0.25, 1)
+	left.position = Vector2(2, 2)
+	left.size = Vector2(12, 12)
+	container.add_child(left)
+	# Right lobe
+	var right := ColorRect.new()
+	right.color = Color(1.0, 0.15, 0.25, 1)
+	right.position = Vector2(14, 2)
+	right.size = Vector2(12, 12)
+	container.add_child(right)
+	# Bottom diamond
+	var bottom := ColorRect.new()
+	bottom.color = Color(1.0, 0.15, 0.25, 1)
+	bottom.position = Vector2(4, 10)
+	bottom.size = Vector2(20, 14)
+	bottom.rotation = 0.785  # 45 degrees
+	bottom.pivot_offset = Vector2(10, 0)
+	container.add_child(bottom)
+	return container
 
 
 func _on_start_button_pressed() -> void:
