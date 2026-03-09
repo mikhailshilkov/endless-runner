@@ -118,6 +118,13 @@ func _end_slide() -> void:
 	mesh.position.y = 0.0
 
 
+func flash_heart() -> void:
+	# Brief flash to show shield was consumed
+	var tween := create_tween()
+	tween.tween_property(mesh, "transparency", 0.7, 0.1)
+	tween.tween_property(mesh, "transparency", 0.0, 0.2)
+
+
 func die() -> void:
 	if is_dead:
 		return

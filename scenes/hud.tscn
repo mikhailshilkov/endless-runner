@@ -46,6 +46,15 @@ text = "0"
 horizontal_alignment = 2
 vertical_alignment = 1
 
+[node name="HeartContainer" type="HBoxContainer" parent="."]
+visible = false
+anchors_preset = 0
+offset_left = 20
+offset_top = 40
+offset_right = 200
+offset_bottom = 80
+theme_override_constants/separation = 4
+
 [node name="StartPanel" type="PanelContainer" parent="."]
 anchors_preset = 8
 anchor_left = 0.5
@@ -75,6 +84,13 @@ horizontal_alignment = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 28
 text = "TAP TO START"
+
+[node name="VersionLabel" type="Label" parent="StartPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 16
+text = "v0.2.1"
+horizontal_alignment = 1
 
 [node name="GameOverPanel" type="PanelContainer" parent="."]
 visible = false

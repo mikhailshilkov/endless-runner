@@ -1,0 +1,48 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/shield_pickup.gd" id="1"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_heart"]
+radius = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_heart"]
+albedo_color = Color(1.0, 0.1, 0.25, 1)
+metallic = 0.6
+roughness = 0.25
+emission_enabled = true
+emission = Color(1.0, 0.15, 0.3, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_lobe"]
+radius = 0.25
+height = 0.5
+radial_segments = 12
+rings = 6
+
+[sub_resource type="BoxMesh" id="BoxMesh_point"]
+size = Vector3(0.5, 0.5, 0.35)
+
+[node name="HeartPickup" type="Area3D"]
+collision_layer = 8
+collision_mask = 2
+script = ExtResource("1")
+
+[node name="CollisionShape" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_heart")
+
+[node name="HeartShape" type="Node3D" parent="."]
+
+[node name="LeftLobe" type="MeshInstance3D" parent="HeartShape"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.15, 0)
+mesh = SubResource("SphereMesh_lobe")
+surface_material_override/0 = SubResource("StandardMaterial3D_heart")
+
+[node name="RightLobe" type="MeshInstance3D" parent="HeartShape"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.15, 0)
+mesh = SubResource("SphereMesh_lobe")
+surface_material_override/0 = SubResource("StandardMaterial3D_heart")
+
+[node name="Point" type="MeshInstance3D" parent="HeartShape"]
+transform = Transform3D(0.707107, -0.707107, 0, 0.707107, 0.707107, 0, 0, 0, 1, 0, -0.1, 0)
+mesh = SubResource("BoxMesh_point")
+surface_material_override/0 = SubResource("StandardMaterial3D_heart")

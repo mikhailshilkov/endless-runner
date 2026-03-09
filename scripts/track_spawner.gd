@@ -8,10 +8,13 @@ var obstacle_low_scene: PackedScene
 var obstacle_high_scene: PackedScene
 var obstacle_full_scene: PackedScene
 var coin_scene: PackedScene
+var heart_scene: PackedScene
 
 var distance_scrolled: float = 0.0
 var next_chunk_at: float = 0.0  # World-space z where the next chunk should go
 var chunks_spawned: int = 0
+var next_heart_at: float = 1000.0  # Distance for next heart spawn
+const HEART_INTERVAL: float = 1000.0
 
 
 func _ready() -> void:
@@ -20,6 +23,7 @@ func _ready() -> void:
 	obstacle_high_scene = preload("res://scenes/obstacle_high.tscn")
 	obstacle_full_scene = preload("res://scenes/obstacle_full.tscn")
 	coin_scene = preload("res://scenes/coin.tscn")
+	heart_scene = preload("res://scenes/shield_pickup.tscn")
 	GameManager.game_started.connect(_on_game_started)
 
 
@@ -29,6 +33,7 @@ func _on_game_started() -> void:
 	distance_scrolled = 0.0
 	next_chunk_at = 0.0
 	chunks_spawned = 0
+	next_heart_at = HEART_INTERVAL
 	# Spawn initial batch
 	_ensure_chunks()
 
@@ -97,6 +102,15 @@ func _populate_chunk(chunk: Node3D) -> void:
 
 		obstacle.position = Vector3(GameManager.LANES[lane], 0.0, z_offset)
 		chunk.add_child(obstacle)
+
+	# Heart pickup — spawns every ~1000 distance
+	var chunk_start_dist: float = next_chunk_at - CHUNK_LENGTH
+	if chunk_start_dist >= next_heart_at:
+		var heart_lane := randi_range(0, 2)
+		var heart: Node3D = heart_scene.instantiate()
+		heart.position = Vector3(GameManager.LANES[heart_lane], 1.5, 0.0)
+		chunk.add_child(heart)
+		next_heart_at = chunk_start_dist + HEART_INTERVAL
 
 	# Coin lines
 	if randf() < 0.7:
