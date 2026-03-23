@@ -8,9 +8,8 @@ extends CanvasLayer
 @onready var final_score_label: Label = $GameOverPanel/VBoxContainer/FinalScoreLabel
 @onready var final_coins_label: Label = $GameOverPanel/VBoxContainer/FinalCoinsLabel
 
-var shop_container: GridContainer
+var shop_section: VBoxContainer
 var wallet_label: Label
-var skin_buttons: Array[Button] = []
 
 
 func _ready() -> void:
@@ -30,6 +29,8 @@ func _show_start_screen() -> void:
 	score_label.visible = false
 	coin_label.visible = false
 	heart_container.visible = false
+	_move_shop_to($StartPanel/VBoxContainer)
+	_refresh_shop()
 
 
 func _on_game_started() -> void:
@@ -47,6 +48,7 @@ func _on_game_over() -> void:
 	game_over_panel.visible = true
 	final_score_label.text = "Score: " + str(GameManager.score)
 	final_coins_label.text = "Coins earned: +" + str(GameManager.coins)
+	_move_shop_to($GameOverPanel/VBoxContainer)
 	wallet_label.text = "Wallet: " + str(GameManager.wallet)
 	_refresh_shop()
 
@@ -79,96 +81,126 @@ func _update_hearts(count: int) -> void:
 func _create_heart_icon() -> Control:
 	var container := Control.new()
 	container.custom_minimum_size = Vector2(28, 28)
-	# Left lobe
 	var left := ColorRect.new()
 	left.color = Color(1.0, 0.15, 0.25, 1)
 	left.position = Vector2(2, 2)
 	left.size = Vector2(12, 12)
 	container.add_child(left)
-	# Right lobe
 	var right := ColorRect.new()
 	right.color = Color(1.0, 0.15, 0.25, 1)
 	right.position = Vector2(14, 2)
 	right.size = Vector2(12, 12)
 	container.add_child(right)
-	# Bottom diamond
 	var bottom := ColorRect.new()
 	bottom.color = Color(1.0, 0.15, 0.25, 1)
 	bottom.position = Vector2(4, 10)
 	bottom.size = Vector2(20, 14)
-	bottom.rotation = 0.785  # 45 degrees
+	bottom.rotation = 0.785
 	bottom.pivot_offset = Vector2(10, 0)
 	container.add_child(bottom)
 	return container
 
 
 func _build_shop() -> void:
-	var vbox: VBoxContainer = $GameOverPanel/VBoxContainer
+	shop_section = VBoxContainer.new()
+	shop_section.add_theme_constant_override("separation", 8)
 
 	# Wallet label
 	wallet_label = Label.new()
 	wallet_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	wallet_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))
-	wallet_label.add_theme_font_size_override("font_size", 20)
-	wallet_label.text = "Wallet: 0"
-	vbox.add_child(wallet_label)
-	vbox.move_child(wallet_label, 3)  # After FinalCoinsLabel
+	wallet_label.add_theme_font_size_override("font_size", 32)
+	wallet_label.text = "Wallet: " + str(GameManager.wallet)
+	shop_section.add_child(wallet_label)
 
 	# Shop header
 	var shop_label := Label.new()
 	shop_label.text = "SHOP"
 	shop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	shop_label.add_theme_color_override("font_color", Color(1, 1, 1))
-	shop_label.add_theme_font_size_override("font_size", 22)
-	vbox.add_child(shop_label)
-	vbox.move_child(shop_label, 4)
+	shop_label.add_theme_font_size_override("font_size", 34)
+	shop_section.add_child(shop_label)
 
-	# Grid of skin buttons
-	shop_container = GridContainer.new()
-	shop_container.columns = 4
-	shop_container.add_theme_constant_override("h_separation", 8)
-	shop_container.add_theme_constant_override("v_separation", 8)
-	vbox.add_child(shop_container)
-	vbox.move_child(shop_container, 5)
+	# Grid of skin items
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	shop_section.add_child(grid)
 
 	for i in range(GameManager.SKINS.size()):
-		var btn := _create_skin_button(i)
-		shop_container.add_child(btn)
-		skin_buttons.append(btn)
+		var item := _create_skin_item(i)
+		grid.add_child(item)
 
 
-func _create_skin_button(index: int) -> Button:
+func _create_skin_item(index: int) -> Button:
 	var skin: Dictionary = GameManager.SKINS[index]
+
 	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(70, 60)
-	btn.add_theme_font_size_override("font_size", 11)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	btn.custom_minimum_size = Vector2(0, 100)
+	btn.add_theme_font_size_override("font_size", 20)
+
+	# Color the button background
+	var style := StyleBoxFlat.new()
+	style.bg_color = skin["color"]
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	style.content_margin_top = 8.0
+	style.content_margin_bottom = 8.0
+	style.content_margin_left = 4.0
+	style.content_margin_right = 4.0
+	btn.add_theme_stylebox_override("normal", style)
+
+	var hover_style := style.duplicate()
+	hover_style.bg_color = skin["color"].lightened(0.2)
+	btn.add_theme_stylebox_override("hover", hover_style)
+
+	var pressed_style := style.duplicate()
+	pressed_style.bg_color = skin["color"].darkened(0.2)
+	btn.add_theme_stylebox_override("pressed", pressed_style)
+
+	var disabled_style := style.duplicate()
+	disabled_style.bg_color = skin["color"].darkened(0.3)
+	btn.add_theme_stylebox_override("disabled", disabled_style)
+
+	# White text with shadow for readability
+	btn.add_theme_color_override("font_color", Color.WHITE)
+	btn.add_theme_color_override("font_hover_color", Color.WHITE)
+	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+	btn.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.7))
+	btn.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
+	btn.add_theme_constant_override("shadow_offset_x", 1)
+	btn.add_theme_constant_override("shadow_offset_y", 1)
+
 	btn.pressed.connect(_on_skin_button_pressed.bind(index))
-
-	# Add a color swatch as a child
-	var swatch := ColorRect.new()
-	swatch.color = skin["color"]
-	swatch.custom_minimum_size = Vector2(30, 20)
-	swatch.size = Vector2(30, 20)
-	swatch.position = Vector2(20, 4)
-	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.add_child(swatch)
-
 	return btn
 
 
+func _move_shop_to(parent: VBoxContainer) -> void:
+	if shop_section.get_parent():
+		shop_section.get_parent().remove_child(shop_section)
+	parent.add_child(shop_section)
+
+
 func _refresh_shop() -> void:
-	for i in range(skin_buttons.size()):
-		var btn: Button = skin_buttons[i]
+	var grid: GridContainer = shop_section.get_child(2)
+	for i in range(grid.get_child_count()):
+		var btn: Button = grid.get_child(i) as Button
 		var skin: Dictionary = GameManager.SKINS[i]
 		if i == GameManager.selected_skin:
-			btn.text = "\n" + skin["name"] + "\nACTIVE"
+			btn.text = skin["name"] + "\nACTIVE"
 			btn.disabled = true
 		elif i in GameManager.owned_skins:
-			btn.text = "\n" + skin["name"] + "\nUSE"
+			btn.text = skin["name"] + "\nUSE"
 			btn.disabled = false
 		else:
 			var price: int = skin["price"]
-			btn.text = "\n" + skin["name"] + "\n" + str(price)
+			btn.text = skin["name"] + "\n" + str(price)
 			btn.disabled = GameManager.wallet < price
 
 

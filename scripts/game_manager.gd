@@ -30,14 +30,14 @@ const LANES: Array[float] = [-2.5, 0.0, 2.5]
 
 # Shop / skins
 const SKINS: Array[Dictionary] = [
-	{"name": "Blue", "color": Color(0.2, 0.6, 1.0), "price": 0},
-	{"name": "Red", "color": Color(0.9, 0.2, 0.2), "price": 50},
-	{"name": "Pink", "color": Color(1.0, 0.4, 0.7), "price": 50},
-	{"name": "Green", "color": Color(0.2, 0.8, 0.3), "price": 75},
-	{"name": "Orange", "color": Color(1.0, 0.5, 0.1), "price": 75},
-	{"name": "Purple", "color": Color(0.6, 0.2, 0.9), "price": 100},
-	{"name": "Cyan", "color": Color(0.1, 0.9, 0.9), "price": 100},
-	{"name": "Gold", "color": Color(1.0, 0.8, 0.1), "price": 500},
+	{"name": "Blue", "color": Color(0.1, 0.35, 0.9), "price": 0},
+	{"name": "Pink", "color": Color(1.0, 0.4, 0.7), "price": 25},
+	{"name": "Purple", "color": Color(0.6, 0.2, 0.9), "price": 75},
+	{"name": "Green", "color": Color(0.2, 0.8, 0.3), "price": 150},
+	{"name": "Teal", "color": Color(0.0, 0.6, 0.6), "price": 300},
+	{"name": "Orange", "color": Color(1.0, 0.5, 0.1), "price": 500},
+	{"name": "Gold", "color": Color(0.85, 0.65, 0.13), "price": 1000},
+	{"name": "Red", "color": Color(0.9, 0.2, 0.2), "price": 2000},
 ]
 
 var wallet: int = 0
@@ -133,8 +133,11 @@ func select_skin(index: int) -> void:
 		_save_data()
 
 
+const SAVE_VERSION := 5
+
 func _save_data() -> void:
 	var config := ConfigFile.new()
+	config.set_value("save", "version", SAVE_VERSION)
 	config.set_value("save", "wallet", wallet)
 	config.set_value("save", "owned_skins", owned_skins)
 	config.set_value("save", "selected_skin", selected_skin)
@@ -143,10 +146,21 @@ func _save_data() -> void:
 
 func _load_save() -> void:
 	var config := ConfigFile.new()
-	if config.load(SAVE_PATH) == OK:
+	if config.load(SAVE_PATH) != OK:
+		return
+	var version: int = config.get_value("save", "version", 1)
+	if version < SAVE_VERSION:
+		# Skin order changed — keep wallet but reset skin selections
 		wallet = config.get_value("save", "wallet", 0)
-		var loaded_owned = config.get_value("save", "owned_skins", [0])
-		owned_skins.clear()
-		for s in loaded_owned:
-			owned_skins.append(s)
-		selected_skin = config.get_value("save", "selected_skin", 0)
+		owned_skins = [0]
+		selected_skin = 0
+		_save_data()
+		return
+	wallet = config.get_value("save", "wallet", 0)
+	var loaded_owned = config.get_value("save", "owned_skins", [0])
+	owned_skins.clear()
+	for s in loaded_owned:
+		owned_skins.append(s)
+	selected_skin = config.get_value("save", "selected_skin", 0)
+	if selected_skin not in owned_skins:
+		selected_skin = 0
