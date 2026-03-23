@@ -20,8 +20,8 @@ var hearts: int = 0
 # Speed settings
 var base_speed: float = 15.0
 var current_speed: float = 15.0
-var max_speed: float = 50.0
-var speed_increase_rate: float = 0.15 # per second
+var max_speed: float = 80.0
+var speed_increase_rate: float = 0.1 # per second
 
 # Lane settings
 const LANE_WIDTH: float = 2.5
