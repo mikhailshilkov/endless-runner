@@ -37,12 +37,17 @@ const SKINS: Array[Dictionary] = [
 	{"name": "Teal", "color": Color(0.0, 0.6, 0.6), "price": 300},
 	{"name": "Orange", "color": Color(1.0, 0.5, 0.1), "price": 500},
 	{"name": "Gold", "color": Color(0.85, 0.65, 0.13), "price": 1000},
-	{"name": "Red", "color": Color(0.9, 0.2, 0.2), "price": 2000},
+	{"name": "Black", "color": Color(0.1, 0.1, 0.1), "price": 2000},
+	{"name": "Red", "color": Color(0.9, 0.2, 0.2), "price": 3000},
 ]
 
 var wallet: int = 0
 var owned_skins: Array[int] = [0]
 var selected_skin: int = 0
+
+# Leaderboard
+const MAX_RUNS: int = 20
+var run_history: Array[Dictionary] = []
 
 const SAVE_PATH := "user://save.cfg"
 
@@ -81,6 +86,10 @@ func end_game() -> void:
 	state = GameState.GAME_OVER
 	wallet += coins
 	wallet_changed.emit(wallet)
+	run_history.append({"score": score, "coins": coins})
+	run_history.sort_custom(func(a, b): return a["score"] > b["score"])
+	if run_history.size() > MAX_RUNS:
+		run_history.resize(MAX_RUNS)
 	_save_data()
 	game_over.emit()
 
@@ -141,6 +150,7 @@ func _save_data() -> void:
 	config.set_value("save", "wallet", wallet)
 	config.set_value("save", "owned_skins", owned_skins)
 	config.set_value("save", "selected_skin", selected_skin)
+	config.set_value("save", "run_history", run_history)
 	config.save(SAVE_PATH)
 
 
@@ -164,3 +174,7 @@ func _load_save() -> void:
 	selected_skin = config.get_value("save", "selected_skin", 0)
 	if selected_skin not in owned_skins:
 		selected_skin = 0
+	var loaded_history = config.get_value("save", "run_history", [])
+	run_history.clear()
+	for r in loaded_history:
+		run_history.append(r)

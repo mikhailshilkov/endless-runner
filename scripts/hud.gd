@@ -5,11 +5,13 @@ extends CanvasLayer
 @onready var heart_container: HBoxContainer = $HeartContainer
 @onready var start_panel: PanelContainer = $StartPanel
 @onready var game_over_panel: PanelContainer = $GameOverPanel
+@onready var shop_panel: PanelContainer = $ShopPanel
+@onready var leaderboard_panel: PanelContainer = $LeaderboardPanel
 @onready var final_score_label: Label = $GameOverPanel/VBoxContainer/FinalScoreLabel
 @onready var final_coins_label: Label = $GameOverPanel/VBoxContainer/FinalCoinsLabel
+@onready var wallet_label: Label = $GameOverPanel/VBoxContainer/WalletLabel
 
-var shop_section: VBoxContainer
-var wallet_label: Label
+var _return_to_panel: PanelContainer
 
 
 func _ready() -> void:
@@ -20,22 +22,27 @@ func _ready() -> void:
 	GameManager.game_over.connect(_on_game_over)
 	GameManager.wallet_changed.connect(_on_wallet_changed)
 	_build_shop()
+	_build_leaderboard()
 	_show_start_screen()
 
 
-func _show_start_screen() -> void:
-	start_panel.visible = true
+func _hide_all_panels() -> void:
+	start_panel.visible = false
 	game_over_panel.visible = false
+	shop_panel.visible = false
+	leaderboard_panel.visible = false
 	score_label.visible = false
 	coin_label.visible = false
 	heart_container.visible = false
-	_move_shop_to($StartPanel/VBoxContainer)
-	_refresh_shop()
+
+
+func _show_start_screen() -> void:
+	_hide_all_panels()
+	start_panel.visible = true
 
 
 func _on_game_started() -> void:
-	start_panel.visible = false
-	game_over_panel.visible = false
+	_hide_all_panels()
 	score_label.visible = true
 	coin_label.visible = true
 	heart_container.visible = true
@@ -45,12 +52,11 @@ func _on_game_started() -> void:
 
 
 func _on_game_over() -> void:
+	_hide_all_panels()
 	game_over_panel.visible = true
 	final_score_label.text = "Score: " + str(GameManager.score)
 	final_coins_label.text = "Coins earned: +" + str(GameManager.coins)
-	_move_shop_to($GameOverPanel/VBoxContainer)
 	wallet_label.text = "Wallet: " + str(GameManager.wallet)
-	_refresh_shop()
 
 
 func _on_score_changed(new_score: int) -> void:
@@ -66,8 +72,7 @@ func _on_hearts_changed(count: int) -> void:
 
 
 func _on_wallet_changed(_amount: int) -> void:
-	if wallet_label:
-		wallet_label.text = "Wallet: " + str(GameManager.wallet)
+	wallet_label.text = "Wallet: " + str(GameManager.wallet)
 
 
 func _update_hearts(count: int) -> void:
@@ -101,40 +106,49 @@ func _create_heart_icon() -> Control:
 	return container
 
 
+# ── Shop ──
+
+var shop_wallet_label: Label
+
 func _build_shop() -> void:
-	shop_section = VBoxContainer.new()
-	shop_section.add_theme_constant_override("separation", 8)
+	var vbox: VBoxContainer = $ShopPanel/VBoxContainer
 
-	# Wallet label
-	wallet_label = Label.new()
-	wallet_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	wallet_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))
-	wallet_label.add_theme_font_size_override("font_size", 32)
-	wallet_label.text = "Wallet: " + str(GameManager.wallet)
-	shop_section.add_child(wallet_label)
+	# Title
+	var title := Label.new()
+	title.text = "SHOP"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_color", Color.WHITE)
+	title.add_theme_font_size_override("font_size", 36)
+	vbox.add_child(title)
 
-	# Shop header
-	var shop_label := Label.new()
-	shop_label.text = "SHOP"
-	shop_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	shop_label.add_theme_color_override("font_color", Color(1, 1, 1))
-	shop_label.add_theme_font_size_override("font_size", 34)
-	shop_section.add_child(shop_label)
+	# Wallet
+	shop_wallet_label = Label.new()
+	shop_wallet_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_wallet_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))
+	shop_wallet_label.add_theme_font_size_override("font_size", 28)
+	vbox.add_child(shop_wallet_label)
 
-	# Grid of skin items
+	# Grid
 	var grid := GridContainer.new()
-	grid.columns = 4
+	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 6)
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	shop_section.add_child(grid)
+	vbox.add_child(grid)
 
 	for i in range(GameManager.SKINS.size()):
-		var item := _create_skin_item(i)
-		grid.add_child(item)
+		var btn := _create_skin_button(i)
+		grid.add_child(btn)
+
+	# Back button
+	var back := Button.new()
+	back.text = "BACK"
+	back.add_theme_font_size_override("font_size", 24)
+	back.pressed.connect(_on_shop_back)
+	vbox.add_child(back)
 
 
-func _create_skin_item(index: int) -> Button:
+func _create_skin_button(index: int) -> Button:
 	var skin: Dictionary = GameManager.SKINS[index]
 
 	var btn := Button.new()
@@ -143,7 +157,6 @@ func _create_skin_item(index: int) -> Button:
 	btn.custom_minimum_size = Vector2(0, 100)
 	btn.add_theme_font_size_override("font_size", 20)
 
-	# Color the button background
 	var style := StyleBoxFlat.new()
 	style.bg_color = skin["color"]
 	style.corner_radius_top_left = 8
@@ -168,7 +181,6 @@ func _create_skin_item(index: int) -> Button:
 	disabled_style.bg_color = skin["color"].darkened(0.3)
 	btn.add_theme_stylebox_override("disabled", disabled_style)
 
-	# White text with shadow for readability
 	btn.add_theme_color_override("font_color", Color.WHITE)
 	btn.add_theme_color_override("font_hover_color", Color.WHITE)
 	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
@@ -181,14 +193,9 @@ func _create_skin_item(index: int) -> Button:
 	return btn
 
 
-func _move_shop_to(parent: VBoxContainer) -> void:
-	if shop_section.get_parent():
-		shop_section.get_parent().remove_child(shop_section)
-	parent.add_child(shop_section)
-
-
 func _refresh_shop() -> void:
-	var grid: GridContainer = shop_section.get_child(2)
+	shop_wallet_label.text = "Wallet: " + str(GameManager.wallet)
+	var grid: GridContainer = $ShopPanel/VBoxContainer.get_child(2)
 	for i in range(grid.get_child_count()):
 		var btn: Button = grid.get_child(i) as Button
 		var skin: Dictionary = GameManager.SKINS[i]
@@ -211,6 +218,123 @@ func _on_skin_button_pressed(index: int) -> void:
 		GameManager.buy_skin(index)
 	_refresh_shop()
 
+
+func _on_shop_button_pressed() -> void:
+	_return_to_panel = start_panel if start_panel.visible else game_over_panel
+	_hide_all_panels()
+	shop_panel.visible = true
+	_refresh_shop()
+
+
+func _on_shop_back() -> void:
+	_hide_all_panels()
+	_return_to_panel.visible = true
+
+
+# ── Leaderboard ──
+
+var leaderboard_list: VBoxContainer
+
+func _build_leaderboard() -> void:
+	var vbox: VBoxContainer = $LeaderboardPanel/VBoxContainer
+
+	# Title
+	var title := Label.new()
+	title.text = "LEADERBOARD"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_color", Color.WHITE)
+	title.add_theme_font_size_override("font_size", 36)
+	vbox.add_child(title)
+
+	# List container
+	leaderboard_list = VBoxContainer.new()
+	leaderboard_list.add_theme_constant_override("separation", 6)
+	leaderboard_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(leaderboard_list)
+
+	# Back button
+	var back := Button.new()
+	back.text = "BACK"
+	back.add_theme_font_size_override("font_size", 24)
+	back.pressed.connect(_on_leaderboard_back)
+	vbox.add_child(back)
+
+
+func _refresh_leaderboard() -> void:
+	for child in leaderboard_list.get_children():
+		child.queue_free()
+
+	if GameManager.run_history.is_empty():
+		var empty_label := Label.new()
+		empty_label.text = "No runs yet!"
+		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		empty_label.add_theme_font_size_override("font_size", 24)
+		leaderboard_list.add_child(empty_label)
+		return
+
+	# Header
+	var header := _create_leaderboard_row("#", "SCORE", "COINS", Color(0.7, 0.7, 0.7))
+	leaderboard_list.add_child(header)
+
+	for i in range(GameManager.run_history.size()):
+		var run: Dictionary = GameManager.run_history[i]
+		var color := Color.WHITE
+		if i == 0:
+			color = Color(1.0, 0.85, 0.0)  # Gold for #1
+		elif i == 1:
+			color = Color(0.8, 0.8, 0.8)  # Silver
+		elif i == 2:
+			color = Color(0.8, 0.5, 0.2)  # Bronze
+		var row := _create_leaderboard_row(
+			str(i + 1), str(run["score"]), str(run["coins"]), color)
+		leaderboard_list.add_child(row)
+
+
+func _create_leaderboard_row(rank: String, score_text: String, coins_text: String, color: Color) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+
+	var rank_label := Label.new()
+	rank_label.text = rank
+	rank_label.custom_minimum_size = Vector2(50, 0)
+	rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rank_label.add_theme_color_override("font_color", color)
+	rank_label.add_theme_font_size_override("font_size", 22)
+	row.add_child(rank_label)
+
+	var score_lbl := Label.new()
+	score_lbl.text = score_text
+	score_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	score_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	score_lbl.add_theme_color_override("font_color", color)
+	score_lbl.add_theme_font_size_override("font_size", 22)
+	row.add_child(score_lbl)
+
+	var coins_lbl := Label.new()
+	coins_lbl.text = coins_text
+	coins_lbl.custom_minimum_size = Vector2(100, 0)
+	coins_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	coins_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.0))
+	coins_lbl.add_theme_font_size_override("font_size", 22)
+	row.add_child(coins_lbl)
+
+	return row
+
+
+func _on_leaderboard_button_pressed() -> void:
+	_return_to_panel = start_panel if start_panel.visible else game_over_panel
+	_hide_all_panels()
+	leaderboard_panel.visible = true
+	_refresh_leaderboard()
+
+
+func _on_leaderboard_back() -> void:
+	_hide_all_panels()
+	_return_to_panel.visible = true
+
+
+# ── Common ──
 
 func _on_start_button_pressed() -> void:
 	GameManager.start_game()
