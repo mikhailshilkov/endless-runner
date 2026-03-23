@@ -4,6 +4,7 @@ const JUMP_VELOCITY: float = 12.0
 const GRAVITY: float = 30.0
 const LANE_SWITCH_SPEED: float = 12.0
 const SLIDE_DURATION: float = 0.6
+const FAST_FALL_SPEED: float = 40.0
 
 var current_lane: int = 1  # 0=left, 1=center, 2=right
 var target_x: float = 0.0
@@ -25,6 +26,8 @@ func _ready() -> void:
 	target_x = GameManager.LANES[current_lane]
 	position.x = target_x
 	slide_collision.disabled = true
+	_apply_skin()
+	GameManager.skin_changed.connect(_on_skin_changed)
 
 
 func _physics_process(delta: float) -> void:
@@ -99,7 +102,11 @@ func jump() -> void:
 
 
 func start_slide() -> void:
-	if is_on_floor() and not is_sliding:
+	if not is_on_floor():
+		# Fast fall: cancel jump and slam down
+		velocity.y = -FAST_FALL_SPEED
+		return
+	if not is_sliding:
 		is_sliding = true
 		slide_timer = SLIDE_DURATION
 		# Shrink collision for sliding
@@ -146,3 +153,14 @@ func reset_player() -> void:
 	mesh.scale = Vector3.ONE
 	mesh.position.y = 0.0
 	_end_slide()
+	_apply_skin()
+
+
+func _on_skin_changed(_index: int) -> void:
+	_apply_skin()
+
+
+func _apply_skin() -> void:
+	var mat: StandardMaterial3D = mesh.get_surface_override_material(0)
+	if mat:
+		mat.albedo_color = GameManager.get_player_color()

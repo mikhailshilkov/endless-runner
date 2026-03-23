@@ -6,6 +6,8 @@ signal score_changed(new_score: int)
 signal coins_changed(new_coins: int)
 signal speed_changed(new_speed: float)
 signal hearts_changed(count: int)
+signal skin_changed(index: int)
+signal wallet_changed(amount: int)
 
 enum GameState { MENU, PLAYING, GAME_OVER }
 
@@ -26,9 +28,27 @@ const LANE_WIDTH: float = 2.5
 const LANE_COUNT: int = 3
 const LANES: Array[float] = [-2.5, 0.0, 2.5]
 
+# Shop / skins
+const SKINS: Array[Dictionary] = [
+	{"name": "Blue", "color": Color(0.2, 0.6, 1.0), "price": 0},
+	{"name": "Red", "color": Color(0.9, 0.2, 0.2), "price": 50},
+	{"name": "Pink", "color": Color(1.0, 0.4, 0.7), "price": 50},
+	{"name": "Green", "color": Color(0.2, 0.8, 0.3), "price": 75},
+	{"name": "Orange", "color": Color(1.0, 0.5, 0.1), "price": 75},
+	{"name": "Purple", "color": Color(0.6, 0.2, 0.9), "price": 100},
+	{"name": "Cyan", "color": Color(0.1, 0.9, 0.9), "price": 100},
+	{"name": "Gold", "color": Color(1.0, 0.8, 0.1), "price": 500},
+]
+
+var wallet: int = 0
+var owned_skins: Array[int] = [0]
+var selected_skin: int = 0
+
+const SAVE_PATH := "user://save.cfg"
+
 
 func _ready() -> void:
-	pass
+	_load_save()
 
 
 func _process(delta: float) -> void:
@@ -59,6 +79,9 @@ func start_game() -> void:
 
 func end_game() -> void:
 	state = GameState.GAME_OVER
+	wallet += coins
+	wallet_changed.emit(wallet)
+	_save_data()
 	game_over.emit()
 
 
@@ -82,3 +105,48 @@ func use_heart() -> bool:
 
 func is_playing() -> bool:
 	return state == GameState.PLAYING
+
+
+func get_player_color() -> Color:
+	return SKINS[selected_skin]["color"]
+
+
+func buy_skin(index: int) -> bool:
+	if index < 0 or index >= SKINS.size():
+		return false
+	if index in owned_skins:
+		return false
+	var price: int = SKINS[index]["price"]
+	if wallet < price:
+		return false
+	wallet -= price
+	owned_skins.append(index)
+	wallet_changed.emit(wallet)
+	_save_data()
+	return true
+
+
+func select_skin(index: int) -> void:
+	if index in owned_skins:
+		selected_skin = index
+		skin_changed.emit(index)
+		_save_data()
+
+
+func _save_data() -> void:
+	var config := ConfigFile.new()
+	config.set_value("save", "wallet", wallet)
+	config.set_value("save", "owned_skins", owned_skins)
+	config.set_value("save", "selected_skin", selected_skin)
+	config.save(SAVE_PATH)
+
+
+func _load_save() -> void:
+	var config := ConfigFile.new()
+	if config.load(SAVE_PATH) == OK:
+		wallet = config.get_value("save", "wallet", 0)
+		var loaded_owned = config.get_value("save", "owned_skins", [0])
+		owned_skins.clear()
+		for s in loaded_owned:
+			owned_skins.append(s)
+		selected_skin = config.get_value("save", "selected_skin", 0)
