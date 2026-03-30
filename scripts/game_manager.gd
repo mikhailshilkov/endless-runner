@@ -45,7 +45,7 @@ const SKINS: Array[Dictionary] = [
 ]
 
 # Boss
-const BOSS_INTERVAL: float = 200.0  # TODO: change back to 10000
+const BOSS_INTERVAL: float = 500.0  # TODO: change back to 10000
 const BOSS_BASE_HP: int = 5
 const BOSS_HP_INCREMENT: int = 2
 var boss_active: bool = false

@@ -164,6 +164,15 @@ func _populate_boss_chunk(chunk: Node3D) -> void:
 		bomb.position = Vector3(GameManager.LANES[bomb_lane], 1.5, bomb_z)
 		chunk.add_child(bomb)
 
+	# Heart pickup (same logic as normal chunks)
+	var chunk_start_dist: float = next_chunk_at - CHUNK_LENGTH
+	if chunk_start_dist >= next_heart_at:
+		var heart_lane := randi_range(0, 2)
+		var heart: Node3D = heart_scene.instantiate()
+		heart.position = Vector3(GameManager.LANES[heart_lane], 1.5, 10.0)
+		chunk.add_child(heart)
+		next_heart_at = chunk_start_dist + HEART_INTERVAL
+
 	# Still spawn coins
 	if randf() < 0.7:
 		var coin_lane := randi_range(0, 2)
@@ -199,7 +208,6 @@ func _repopulate_ahead_chunks() -> void:
 	for child in get_children():
 		if not child.has_meta("world_z"):
 			continue
-		# Only repopulate chunks that are still ahead
 		var screen_z: float = child.get_meta("world_z") + distance_scrolled
 		if screen_z > -5.0:
 			continue  # Already behind the player
@@ -207,5 +215,7 @@ func _repopulate_ahead_chunks() -> void:
 		for sub in child.get_children():
 			if sub is Area3D:
 				sub.queue_free()
-		# Repopulate with correct content for current state
+		# Skip the closest 2 chunks to give player breathing room
+		if screen_z > -CHUNK_LENGTH * 3:
+			continue
 		_populate_chunk(child)

@@ -5,7 +5,7 @@ extends Node3D
 var boss_obstacle_scene: PackedScene
 var throw_timer: float = 0.0
 var throw_interval: float = 2.0
-var throw_interval_min: float = 0.5
+var throw_interval_min: float = 1.0
 var throw_accel: float = 0.05
 var bob_time: float = 0.0
 var base_y: float = 4.0
@@ -17,6 +17,10 @@ var throw_count: int = 0
 func _ready() -> void:
 	boss_obstacle_scene = preload("res://scenes/boss_obstacle.tscn")
 	mesh = $Mesh
+	# Duplicate material so animations don't leak across instances
+	var mat: StandardMaterial3D = mesh.get_surface_override_material(0)
+	if mat:
+		mesh.set_surface_override_material(0, mat.duplicate())
 	GameManager.boss_hit.connect(_on_boss_hit)
 	GameManager.boss_defeated.connect(_on_boss_defeated)
 
