@@ -8,6 +8,9 @@ signal speed_changed(new_speed: float)
 signal hearts_changed(count: int)
 signal skin_changed(index: int)
 signal wallet_changed(amount: int)
+signal boss_spawned(hp: int)
+signal boss_hit(hp_remaining: int)
+signal boss_defeated
 
 enum GameState { MENU, PLAYING, GAME_OVER }
 
@@ -40,6 +43,16 @@ const SKINS: Array[Dictionary] = [
 	{"name": "Black", "color": Color(0.1, 0.1, 0.1), "price": 2000},
 	{"name": "Red", "color": Color(0.9, 0.2, 0.2), "price": 3000},
 ]
+
+# Boss
+const BOSS_INTERVAL: float = 200.0  # TODO: change back to 10000
+const BOSS_BASE_HP: int = 5
+const BOSS_HP_INCREMENT: int = 2
+var boss_active: bool = false
+var boss_hp: int = 0
+var boss_max_hp: int = 0
+var bosses_defeated: int = 0
+var next_boss_at: float = BOSS_INTERVAL
 
 var wallet: int = 0
 var owned_skins: Array[int] = [0]
@@ -74,6 +87,10 @@ func start_game() -> void:
 	coins = 0
 	distance = 0.0
 	hearts = 0
+	boss_active = false
+	boss_hp = 0
+	bosses_defeated = 0
+	next_boss_at = BOSS_INTERVAL
 	current_speed = base_speed
 	score_changed.emit(score)
 	coins_changed.emit(coins)
@@ -114,6 +131,25 @@ func use_heart() -> bool:
 
 func is_playing() -> bool:
 	return state == GameState.PLAYING
+
+
+func start_boss() -> void:
+	boss_active = true
+	boss_max_hp = BOSS_BASE_HP + bosses_defeated * BOSS_HP_INCREMENT
+	boss_hp = boss_max_hp
+	boss_spawned.emit(boss_hp)
+
+
+func hit_boss() -> void:
+	if not boss_active:
+		return
+	boss_hp -= 1
+	boss_hit.emit(boss_hp)
+	if boss_hp <= 0:
+		boss_active = false
+		bosses_defeated += 1
+		next_boss_at = distance + BOSS_INTERVAL
+		boss_defeated.emit()
 
 
 func get_player_color() -> Color:

@@ -12,6 +12,7 @@ extends CanvasLayer
 @onready var wallet_label: Label = $GameOverPanel/VBoxContainer/WalletLabel
 
 var _return_to_panel: PanelContainer
+var boss_hp_label: Label
 
 
 func _ready() -> void:
@@ -21,6 +22,10 @@ func _ready() -> void:
 	GameManager.game_started.connect(_on_game_started)
 	GameManager.game_over.connect(_on_game_over)
 	GameManager.wallet_changed.connect(_on_wallet_changed)
+	GameManager.boss_spawned.connect(_on_boss_spawned)
+	GameManager.boss_hit.connect(_on_boss_hit)
+	GameManager.boss_defeated.connect(_on_boss_defeated)
+	_build_boss_hud()
 	_build_shop()
 	_build_leaderboard()
 	_show_start_screen()
@@ -53,6 +58,7 @@ func _on_game_started() -> void:
 
 func _on_game_over() -> void:
 	_hide_all_panels()
+	boss_hp_label.visible = false
 	game_over_panel.visible = true
 	final_score_label.text = "Score: " + str(GameManager.score)
 	final_coins_label.text = "Coins earned: +" + str(GameManager.coins)
@@ -104,6 +110,41 @@ func _create_heart_icon() -> Control:
 	bottom.pivot_offset = Vector2(10, 0)
 	container.add_child(bottom)
 	return container
+
+
+# ── Boss HUD ──
+
+func _build_boss_hud() -> void:
+	boss_hp_label = Label.new()
+	boss_hp_label.anchors_preset = Control.PRESET_CENTER_TOP
+	boss_hp_label.anchor_left = 0.5
+	boss_hp_label.anchor_right = 0.5
+	boss_hp_label.offset_left = -150
+	boss_hp_label.offset_top = 100
+	boss_hp_label.offset_right = 150
+	boss_hp_label.offset_bottom = 140
+	boss_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	boss_hp_label.add_theme_color_override("font_color", Color(0.3, 0.2, 1.0))
+	boss_hp_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+	boss_hp_label.add_theme_font_size_override("font_size", 32)
+	boss_hp_label.visible = false
+	add_child(boss_hp_label)
+
+
+func _on_boss_spawned(hp: int) -> void:
+	boss_hp_label.text = "BOSS: " + str(hp) + "/" + str(hp)
+	boss_hp_label.visible = true
+
+
+func _on_boss_hit(hp_remaining: int) -> void:
+	boss_hp_label.text = "BOSS: " + str(hp_remaining) + "/" + str(GameManager.boss_max_hp)
+
+
+func _on_boss_defeated() -> void:
+	boss_hp_label.text = "BOSS DEFEATED!"
+	var tween := create_tween()
+	tween.tween_interval(1.5)
+	tween.tween_callback(func(): boss_hp_label.visible = false)
 
 
 # ── Shop ──
